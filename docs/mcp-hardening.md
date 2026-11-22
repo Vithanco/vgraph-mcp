@@ -1,6 +1,6 @@
 # Hardening the hosted MCP endpoint
 
-`mcp.vithanco.com` is open to anyone on purpose (see `SECURITY.md`), so what a
+`mcp.vithanco.com` is open to anyone on purpose (see VGraph's `SECURITY.md`), so what a
 request may cost is bounded in code, in one place: `MCPLimits`.
 
 ## Why the input is bounded and not the render

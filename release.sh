@@ -18,7 +18,7 @@
 # or npm.
 #
 # The version lives in two files — package.json and server.json, the latter
-# twice — and `just publish-mcp-node` refuses to publish if they disagree.
+# twice — and `just publish-node` refuses to publish if they disagree.
 
 set -euo pipefail
 
@@ -88,7 +88,7 @@ fi
 
 # Refresh the vendored engine from an already-built monorepo, the way the
 # plugins re-copy VGraphWasm.wasm. A copy, not a build: building is `just
-# mcp-node`, and a release script that silently spends three minutes compiling
+# node`, and a release script that silently spends three minutes compiling
 # is a release script people stop running.
 VGRAPH_REPO="${VGRAPH_REPO:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 if [ -d "$VGRAPH_REPO/website/Package" ] && [ -d "$VGRAPH_REPO/fonts" ]; then
@@ -99,7 +99,7 @@ if [ -d "$VGRAPH_REPO/website/Package" ] && [ -d "$VGRAPH_REPO/fonts" ]; then
     WASM_BYTES=$(wc -c < vendor/Package/VGraphWasm.wasm)
     if [ "$WASM_BYTES" -gt 20000000 ]; then
         echo "  WARN: vendored engine is $WASM_BYTES bytes — that is a debug build."
-        echo "        Run 'just mcp-node' before publishing."
+        echo "        Run 'just node' before publishing."
     fi
     echo "  vendored engine refreshed ($(du -sh vendor | cut -f1))"
 else
@@ -107,4 +107,4 @@ else
 fi
 
 echo ""
-echo "✓ Bumped to $NEW. Publish with:  just publish-mcp-node"
+echo "✓ Bumped to $NEW. Publish with:  just publish-node"

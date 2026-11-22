@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# AGENTS.md (via CLAUDE.md) is picked up as review guidelines automatically; the
+# instructions below add what matters per path.
+language: en-US
+
+reviews:
+  profile: chill
+  auto_approvals:
+    enabled: false   # single maintainer; checks stay advisory
+  high_level_summary: true
+  poem: false
+  in_progress_fortune: false
+  sequence_diagrams: false
+  related_prs: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+
+  path_filters:
+    - "!**/Package.resolved"
+    - "!**/package-lock.json"
+    - "!tools.json"   # generated from the Swift server
+
+  path_instructions:
+    - path: "Sources/**/*.swift"
+      instructions: |
+        The hosted MCP endpoint is open to anyone (VGraph's SECURITY.md, docs/mcp-hardening.md).
+        Layout cannot be cancelled, so every input must be bounded before layout through
+        `MCPLimits`. Flag a new tool or parameter that reaches layout or PNG conversion
+        without a limit, unbounded subprocess output or runtime, and error messages that
+        leak paths or internals. Foundation and key paths are fine here.
+    - path: "{src,test}/**/*.mjs"
+      instructions: |
+        The npm host runs VGraph's wasm engine and must call only exports that VGraph's
+        VGraphWasm/Sources/Main.swift still declares (VGraph's scripts/check-plugin-api.sh).
+    - path: "{**/*.sh,justfile}"
+      instructions: |
+        Shell is written for the maintainer's macOS (bash 3.2, BSD tools) and must also
+        run in the Linux CI container. Flag bash 4+ features, GNU-only or BSD-only flags,
+        unquoted variables and missing error handling. A check that prints a warning and
+        exits 0 is a check that never fails; flag it.
+    - path: ".github/workflows/**"
+      instructions: |
+        Public repository. Actions are pinned to a full commit SHA, `permissions` stay
+        minimal, every download is verified by checksum, and `pull_request_target` is
+        never used. Nothing is published from CI, so no publish secret may appear here.
+    - path: "Dockerfile"
+      instructions: |
+        The image serves the public MCP endpoint on Cloud Run. Flag anything that adds
+        secrets to the image, widens what gets copied in, or unpins a base image or download.

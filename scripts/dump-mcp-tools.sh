@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate vgraph-mcp-node/tools.json from the native MCP server.
+# Regenerate tools.json, the npm host's tool list, from the native MCP server.
 #
 # The Node host serves the same tools as `vgraph-mcp`, and their descriptions
 # are ~20KB of VGL documentation that the model actually reads — the difference
@@ -13,7 +13,7 @@
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-OUT="vgraph-mcp-node/tools.json"
+OUT="tools.json"
 
 # Whichever was built most recently, not a fixed preference: a stale release
 # binary sitting next to a fresh debug one would silently dump old descriptions.
@@ -25,7 +25,7 @@ for candidate in .build/release/vgraph-mcp .build/debug/vgraph-mcp; do
     fi
 done
 if [ -z "$BIN" ]; then
-    echo "Error: no vgraph-mcp binary — run 'just mcp' first." >&2
+    echo "Error: no vgraph-mcp binary — run 'just build' first." >&2
     exit 1
 fi
 

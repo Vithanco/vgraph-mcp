@@ -45,9 +45,9 @@ export PATH="$ROOT/bin:$PATH" MCP_RETRY_DELAY=0 MCP_RETRIES=3
 given_registry() { # in a fresh WORK with server.json at 1.2.3 and a signing key
     WORK=$(mktemp -d "$ROOT/work.XXXXXX") || exit 1
     export REG="$WORK/reg" MCP_SIGNING_KEY="$WORK/key.pem"
-    mkdir -p "$REG" "$WORK/vgraph-mcp-node"
+    mkdir -p "$REG" "$WORK"
     : > "$REG/calls"; : > "$REG/curl.log"; echo key > "$MCP_SIGNING_KEY"
-    echo '{"name":"com.example/demo","version":"1.2.3"}' > "$WORK/vgraph-mcp-node/server.json"
+    echo '{"name":"com.example/demo","version":"1.2.3"}' > "$WORK/server.json"
 }
 registry() { ( cd "$WORK" && "$REPO_ROOT/scripts/mcp-registry.sh" "$@" ) >"$WORK/out" 2>&1; }
 count() { grep -cx "$1" "$REG/calls"; }
@@ -78,7 +78,7 @@ given_registry
 echo 99 > "$REG/login-fails"
 registry && fail "succeeded without listing"
 [ "$(count login)" = 3 ] || fail "wanted three attempts: $(cat "$REG/calls")"
-grep -q 'just publish-mcp-node' "$WORK/out" || fail "does not say how to finish: $(cat "$WORK/out")"
+grep -q 'just publish-node' "$WORK/out" || fail "does not say how to finish: $(cat "$WORK/out")"
 
 # Given the version listed, not listed, or a registry that times out, when
 # asking, then only a listed version answers yes.

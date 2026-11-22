@@ -16,16 +16,8 @@ struct LogPolicyDocsTests {
         #expect(try read("Dockerfile").contains("ENV VGRAPH_LOG_LEVEL=warn"))
     }
 
-    @Test("The hosted-server privacy note says diagrams are not stored, logs hold request metadata and warnings, and names VGRAPH_LOG_LEVEL")
-    func privacyNote() throws {
-        let note = try read("SECURITY.md")
-        #expect(note.contains("Diagrams are not stored"))
-        #expect(note.contains("request metadata and warnings"))
-        #expect(note.contains("VGRAPH_LOG_LEVEL"))
-    }
-
-    @Test("The README of the Node server points to the same note")
+    @Test("The README points to the privacy note in VGraph's SECURITY.md")
     func nodeReadmePoints() throws {
-        #expect(try read("vgraph-mcp-node/README.md").contains("SECURITY.md"))
+        #expect(try read("README.md").contains("https://github.com/Vithanco/VGraph/blob/main/SECURITY.md"))
     }
 }

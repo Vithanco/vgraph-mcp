@@ -1,0 +1,15 @@
+# Files that run commands, or steer a coding agent, when someone builds, tests,
+# commits or reviews. Whoever can change one can run code or give instructions on
+# another person's machine, so the maintainer approves every change to them.
+/AGENTS.md          @Vithanco
+/CLAUDE.md          @Vithanco
+/.coderabbit.yaml   @Vithanco
+/.github/           @Vithanco
+/justfile           @Vithanco
+/scripts/           @Vithanco
+*.sh                @Vithanco
+/Dockerfile         @Vithanco
+Package.swift       @Vithanco
+Package.resolved    @Vithanco
+package.json        @Vithanco
+package-lock.json   @Vithanco

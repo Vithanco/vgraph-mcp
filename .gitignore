@@ -6,3 +6,7 @@ node_modules/
 
 # npm pack output
 *.tgz
+
+# Swift
+.build/
+.swiftpm/

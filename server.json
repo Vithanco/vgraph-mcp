@@ -3,7 +3,7 @@
   "name": "com.vithanco/vgraph-mcp",
   "description": "Concept Maps, IBIS, Causal Loop Diagrams and Timelines as images. Runs locally via WebAssembly.",
   "repository": {
-    "url": "https://github.com/Vithanco/VGraph",
+    "url": "https://github.com/Vithanco/vgraph-mcp",
     "source": "github"
   },
   "version": "1.0.15",

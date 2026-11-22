@@ -9,11 +9,10 @@
   "homepage": "https://vithanco.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Vithanco/VGraph.git",
-    "directory": "vgraph-mcp-node"
+    "url": "git+https://github.com/Vithanco/vgraph-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/Vithanco/VGraph/issues"
+    "url": "https://github.com/Vithanco/vgraph-mcp/issues"
   },
   "keywords": [
     "mcp",

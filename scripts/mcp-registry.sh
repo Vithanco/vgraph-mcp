@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# List vgraph-mcp-node in the MCP Registry at the version its server.json names.
+# List the npm host in the MCP Registry at the version its server.json names.
 #
 #   scripts/mcp-registry.sh          # log in and publish, retrying; nothing to do when listed
 #   scripts/mcp-registry.sh --has    # exit 0 when the registry lists that version
@@ -9,7 +9,6 @@
 # landed, and the registry refuses a version twice, so each attempt asks first.
 set -euo pipefail
 
-cd vgraph-mcp-node
 NAME=$(node -p "require('./server.json').name")
 VER=$(node -p "require('./server.json').version")
 REGISTRY=https://registry.modelcontextprotocol.io
@@ -26,7 +25,7 @@ fi
 
 if ! command -v mcp-publisher >/dev/null 2>&1; then
     echo "· mcp-publisher not installed, so the registry entry was skipped —"
-    echo "  'brew install mcp-publisher', then 'just publish-mcp-node'."
+    echo "  'brew install mcp-publisher', then 'just publish-node'."
     exit 0
 fi
 
@@ -62,5 +61,5 @@ if listed; then
     exit 0
 fi
 echo "The MCP Registry did not take $NAME $VER after $TRIES attempts." >&2
-echo "npm has it; finish with 'just publish-mcp-node', which goes straight to the registry." >&2
+echo "npm has it; finish with 'just publish-node', which goes straight to the registry." >&2
 exit 1

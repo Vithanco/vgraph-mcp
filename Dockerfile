@@ -8,10 +8,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libc++-dev libc++abi-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# The context is what `just _image-context` stages: VGraph's package with this
+# one inside it, as in a checkout, because Package.swift builds against `..`.
 WORKDIR /app
-COPY Package.swift Package.resolved ./
-COPY Sources/ Sources/
-COPY Tests/ Tests/
+COPY VGraph/ VGraph/
+WORKDIR /app/VGraph/vgraph-mcp
 
 # No `--mount=type=cache` here, deliberately. It needs BuildKit, and neither
 # builder that matters has it: Cloud Build's default step is the legacy builder,
@@ -49,7 +50,7 @@ RUN apt-get update \
 # Two families, two fixes:
 #
 #  - Node and relation labels ask for DM Sans, which is ours to ship. Same faces
-#    the other renderers bundle; see fonts/README.md.
+#    the other renderers bundle; see VGraph's fonts/README.md.
 #  - The graph title asks for bare `Helvetica` and the watermark for bare
 #    `Arial` (Attributes.Group.fontname defaults to .helvetica, not to
 #    FontFamily.default). Neither exists here, and no amount of DM Sans helps.
@@ -60,8 +61,8 @@ RUN apt-get update \
 # library, not the binary. Fontconfig would scan /usr/share/fonts at first use
 # anyway; building the cache at image-build time keeps that cost off a Cloud Run
 # cold start.
-COPY fonts/*.ttf /usr/share/fonts/truetype/dmsans/
-COPY fonts/OFL.txt /usr/share/fonts/truetype/dmsans/
+COPY VGraph/fonts/*.ttf /usr/share/fonts/truetype/dmsans/
+COPY VGraph/fonts/OFL.txt /usr/share/fonts/truetype/dmsans/
 RUN fc-cache -f
 
 COPY --from=swift-builder /app/vgraph-mcp-http-bin /app/vgraph-mcp-http

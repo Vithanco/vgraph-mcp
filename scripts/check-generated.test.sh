@@ -13,10 +13,10 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t
 
 given_generated() { # committed tools.json holding $1; the generator now writes $2
     WORK=$(mktemp -d "$ROOT/work.XXXXXX") || exit 1
-    mkdir -p "$WORK/scripts" "$WORK/vgraph-mcp-node"
-    printf '#!/bin/sh\necho %s > vgraph-mcp-node/tools.json\n' "$2" > "$WORK/scripts/dump-mcp-tools.sh"
+    mkdir -p "$WORK/scripts"
+    printf '#!/bin/sh\necho %s > tools.json\n' "$2" > "$WORK/scripts/dump-mcp-tools.sh"
     chmod +x "$WORK/scripts/dump-mcp-tools.sh"
-    echo "$1" > "$WORK/vgraph-mcp-node/tools.json"
+    echo "$1" > "$WORK/tools.json"
     git -C "$WORK" init -q -b main && git -C "$WORK" add . && git -C "$WORK" commit -qm init
 }
 check() { ( cd "$WORK" && "$REPO_ROOT/scripts/check-generated.sh" "$@" ) >"$WORK/out" 2>&1; }
@@ -28,7 +28,7 @@ check || fail "up-to-date file failed: $(cat "$WORK/out")"
 # Given a tool added without regenerating, then the check fails and says how to fix it.
 given_generated '[]' '[decompose]'
 check && fail "stale file passed"
-grep -q 'vgraph-mcp-node/tools.json' "$WORK/out" || fail "does not name the stale file: $(cat "$WORK/out")"
+grep -q 'tools.json' "$WORK/out" || fail "does not name the stale file: $(cat "$WORK/out")"
 grep -q 'just regen' "$WORK/out" || fail "does not say how to fix it: $(cat "$WORK/out")"
 
 # Given unrelated uncommitted work, then the check still passes.
@@ -39,6 +39,6 @@ check || fail "unrelated uncommitted work failed: $(cat "$WORK/out")"
 # Given --write, then the file is regenerated and nothing fails.
 given_generated '[]' '[decompose]'
 check --write || fail "--write failed: $(cat "$WORK/out")"
-grep -q decompose "$WORK/vgraph-mcp-node/tools.json" || fail "--write did not regenerate"
+grep -q decompose "$WORK/tools.json" || fail "--write did not regenerate"
 
 exit "$FAILED"

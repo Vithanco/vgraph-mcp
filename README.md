@@ -51,11 +51,16 @@ there appears here without anyone editing JavaScript.
 
 ## Building it
 
-From the repository root:
+This repository is built inside a [VGraph](https://github.com/Vithanco/VGraph)
+checkout, against the engine there: VGraph's `just plugins-setup` clones it to
+`VGraph/vgraph-mcp`. The Swift servers (`vgraph-mcp` on stdio, `vgraph-mcp-http`
+behind `mcp.vithanco.com`) live here too.
 
 ```bash
-just mcp-node       # build the wasm, vendor it with the fonts, refresh tools.json
-just mcp-node-run   # run it on stdio against the current build
+just node       # build the wasm in VGraph, vendor it with the fonts, refresh tools.json
+just node-run   # run it on stdio against the current build
+just test       # the Swift servers and the scripts
+just test-node  # this host, against the release engine
 ```
 
 `vendor/` is not committed. The wasm is 4.1MB, and a copy in git is a copy that
@@ -66,12 +71,11 @@ can disagree with the engine it was built from.
 **The wasm writes to stderr.** It logs layout DEBUG lines to WASI stdout, and
 under a stdio MCP server stdout carries JSON-RPC. `wasm-host.mjs` routes both
 wasm fds to stderr; the noise is expected. What the hosted server logs is in
-[`SECURITY.md`](../SECURITY.md); this local host is a separate implementation.
+[`SECURITY.md`](https://github.com/Vithanco/VGraph/blob/main/SECURITY.md); this local host is a separate implementation.
 
 **Fonts are bundled rather than read from the SVG.** The SVG carries an
 `@import` for DM Sans, which browsers honour and rasterisers ignore — and resvg
-ignores an embedded `@font-face` too. See `fonts/README.md` at the repository
-root for why the faces are TTF and why there is one file per weight.
+ignores an embedded `@font-face` too. See VGraph's `fonts/README.md` for why the faces are TTF and why there is one file per weight.
 
 ## Licence and source
 

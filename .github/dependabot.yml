@@ -1,0 +1,15 @@
+# Explicit labels stop Dependabot creating one label per ecosystem. No Swift
+# entry: Package.swift builds against the VGraph checkout around this one, which
+# Dependabot does not have; VGraph's own Dependabot covers the shared pins.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies"]
