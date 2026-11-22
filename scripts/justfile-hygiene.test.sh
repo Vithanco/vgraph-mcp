@@ -21,6 +21,19 @@ for name, r in recipes.items():
 for name in ("publish", "publish-node", "publish-cloud-run"):
     if deps(name)[:2] != ["_require-maintainer", "_require-vgraph-main"]:
         print(name + " does not check VGraph before it builds: " + " ".join(deps(name)))
+# Publishing ships what `just release` built and checked; it compiles nothing.
+for name in ("publish", "publish-node"):
+    for compiling in ("build", "node"):
+        if compiling in deps(name): print(name + " compiles again: depends on " + compiling)
+if "_vendor" not in deps("publish-node"): print("publish-node does not vendor the released engine")
+body = json.dumps(recipes["_vendor"]["body"])
+if "check-engine-build.sh" not in body: print("_vendor does not check the engine against the recorded build")
+# Only dump-mcp-tools runs the server here, and a debug build answers the same.
+if "config=release" in json.dumps(recipes["release"]["body"]): print("release compiles the servers optimised")
+# Cloud Build runs only for sources no image was built from, and the deploy
+# rolls out the image that was built or found.
+if "scripts/cloud-image.sh build" not in json.dumps(recipes["build-cloud-image"]["body"]): print("build-cloud-image does not skip an image that exists")
+if ".build/cloud-image" not in json.dumps(recipes["publish-cloud-run"]["body"]): print("publish-cloud-run does not deploy the image that was built")
 ')
 [ -z "$out" ] || fail "$out"
 

@@ -24,18 +24,26 @@ default:
 build:
     swift build -c {{config}}
 
-# Assemble the npm host: build the release engine in VGraph, then vendor it.
+# Assemble the npm host for development: build the release engine in VGraph, vendor it, refresh tools.json.
 [group('build')]
 node: build
     #!/usr/bin/env bash
     set -euo pipefail
-    # Always release, regardless of `config`. This vendors what npm publishes,
-    # and the debug module is 78MB against 4.1MB.
+    # Always release, regardless of `config`: the debug module is 78MB against 4.1MB.
     just --justfile "{{vgraph}}/justfile" wasm --release --skip-smoke
-    just _vendor
+    just _copy-engine
+    ./scripts/dump-mcp-tools.sh
 
-# Copy the engine VGraph last built, and the fonts, into vendor/; refresh tools.json.
-_vendor:
+# Vendor the engine `just release` built, refusing any other: what npm publishes.
+_vendor: _copy-engine
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Run from VGraph's root, as the check is written; it also checks this copy.
+    HERE=$(basename "{{justfile_directory()}}")
+    ( cd "{{vgraph}}" && ./scripts/check-engine-build.sh "$HERE/vendor/Package" >/dev/null )
+
+# Copy the engine VGraph last built, and the fonts, into vendor/.
+_copy-engine:
     #!/usr/bin/env bash
     set -euo pipefail
     # Vendored rather than committed: the wasm is 4.1MB, and a copy in git is a
@@ -51,7 +59,6 @@ _vendor:
         echo "Error: vendored wasm is $WASM_BYTES bytes — that is a debug build." >&2
         exit 1
     fi
-    ./scripts/dump-mcp-tools.sh
     echo "✓ npm host vendored ($(du -sh vendor | cut -f1))"
 
 # Regenerate every tracked file the build generates (today tools.json). CI fails while one is stale.
@@ -59,10 +66,12 @@ _vendor:
 regen: build
     ./scripts/check-generated.sh --write
 
-# What VGraph's `just release` runs here, after it built the release engine: release servers, the npm host, generated files.
+# What VGraph's `just release` runs here, after it built the release engine: vendor it, check the generated files.
 [group('build')]
 release:
-    just config=release build
+    # Debug: nothing ships from a local server binary (Cloud Run builds its own),
+    # and dump-mcp-tools gets the same answer from either.
+    just build
     just _vendor
     ./scripts/check-generated.sh
 
@@ -72,6 +81,7 @@ test: build lint
     swift test --skip 'DockerIntegrationTests/test(DockerBuildSucceeds|NonRootUserExecution)'
     ./scripts/check-generated.test.sh
     ./scripts/mcp-registry.test.sh
+    ./scripts/cloud-image.test.sh
     ./scripts/justfile-hygiene.test.sh
     ./scripts/check-generated.sh
 
@@ -145,7 +155,7 @@ publish: _require-maintainer _require-vgraph-main _require-main
 
 # Publish the npm host to npm, then list it in the MCP Registry.
 [group('publish')]
-publish-node otp='': _require-maintainer _require-vgraph-main node
+publish-node otp='': _require-maintainer _require-vgraph-main _vendor
     #!/usr/bin/env bash
     set -euo pipefail
     PKG=$(node -p "require('./package.json').name")
@@ -185,11 +195,11 @@ publish-node otp='': _require-maintainer _require-vgraph-main node
         FAIL=1
     fi
 
-    # `just node` ran above, so these should hold — they catch someone
+    # `_vendor` ran above, so these should hold — they catch someone
     # publishing from a tree where it half-failed.
     WASM="vendor/Package/VGraphWasm.wasm"
     if [ ! -f "$WASM" ]; then
-        echo "Preflight: $WASM missing — 'just node' did not complete." >&2
+        echo "Preflight: $WASM missing — '_vendor' did not complete." >&2
         FAIL=1
     elif [ "$(wc -c < "$WASM")" -gt 20000000 ]; then
         echo "Preflight: $WASM is a debug build." >&2
@@ -229,20 +239,10 @@ publish-node otp='': _require-maintainer _require-vgraph-main node
     echo ""
     ./scripts/mcp-registry.sh
 
-# Build the linux/amd64 image on Cloud Build + push it (no local Docker needed).
+# Build the linux/amd64 image on Cloud Build + push it, unless one was built from these sources already.
 [group('publish')]
 build-cloud-image: _require-maintainer _require-gcloud _image-context
-    #!/usr/bin/env bash
-    set -euo pipefail
-    # Built remotely because Cloud Run is x86_64-only and this is an ARM Mac: a
-    # local build must emulate amd64, and the Swift compiler dies under QEMU with
-    # SIGILL partway through. Cloud Build is native amd64 — no emulation, no
-    # Rosetta, no Docker. Use build-cloud-image-local if you want a local image.
-    echo "=== Building {{cloud_service}} on Cloud Build (native linux/amd64) ==="
-    # --tag builds AND pushes, so publish-cloud-run needs no separate docker push.
-    gcloud builds submit --tag "{{cloud_image}}" .build/image-context
-    echo ""
-    echo "✓ built and pushed {{cloud_image}}"
+    CLOUD_IMAGE="{{cloud_image}}" ./scripts/cloud-image.sh build .build/image-context
 
 # Fallback: build the image locally with Docker instead of on Cloud Build.
 [group('publish')]
@@ -271,10 +271,12 @@ build-cloud-image-local: _image-context
         echo "       Start Docker Desktop (or 'colima start'), then re-run." >&2
         exit 1
     fi
-    echo "=== Building {{cloud_service}} image for linux/amd64 ==="
-    docker build --platform linux/amd64 -t "{{cloud_image}}" .build/image-context
-    SIZE=$(docker image inspect "{{cloud_image}}" --format='{{ "{{" }}.Size{{ "}}" }}')
-    awk "BEGIN { printf \"  Image: {{cloud_image}}\n  Size:  %.0f MB\n\", $SIZE/1024/1024 }"
+    IMAGE="{{cloud_image}}:$(./scripts/cloud-image.sh tag .build/image-context)"
+    echo "=== Building $IMAGE for linux/amd64 ==="
+    docker build --platform linux/amd64 -t "$IMAGE" .build/image-context
+    echo "$IMAGE" > .build/cloud-image
+    SIZE=$(docker image inspect "$IMAGE" --format='{{ "{{" }}.Size{{ "}}" }}')
+    awk "BEGIN { printf \"  Image: $IMAGE\n  Size:  %.0f MB\n\", $SIZE/1024/1024 }"
 
 # Stage the image's build context: the tracked sources of VGraph with this
 # repository inside it, as in a checkout, because Package.swift builds against `..`.
@@ -295,10 +297,10 @@ _image-context:
 publish-cloud-run: _require-maintainer _require-vgraph-main _require-gcloud build-cloud-image
     #!/usr/bin/env bash
     set -euo pipefail
-    # No push step: `gcloud builds submit --tag` already pushed to Artifact
-    # Registry. Building locally instead? Run build-cloud-image-local, then
-    # `docker push {{cloud_image}}` yourself before deploying.
-    echo "=== Deploying to Cloud Run ==="
+    # build-cloud-image recorded the image it built or found. Built locally instead?
+    # Run build-cloud-image-local and `docker push` the image it names first.
+    IMAGE=$(cat .build/cloud-image)
+    echo "=== Deploying $IMAGE to Cloud Run ==="
     # The service is open to anyone (VGraph's SECURITY.md), so these bound what it can cost.
     # They used to be set by hand with `gcloud run services update`; a fresh deploy
     # would have lost them.
@@ -317,7 +319,7 @@ publish-cloud-run: _require-maintainer _require-vgraph-main _require-gcloud buil
         # only work, and idle time then costs nothing.
         --cpu-throttling
     )
-    gcloud run deploy "{{cloud_service}}" --image "{{cloud_image}}" --port 8080 --region "{{cloud_region}}" --memory 1Gi "${limits[@]}"
+    gcloud run deploy "{{cloud_service}}" --image "$IMAGE" --port 8080 --region "{{cloud_region}}" --memory 1Gi "${limits[@]}"
     echo ""
     echo "=== Verifying health check ==="
     curl -s https://mcp.vithanco.com/health
