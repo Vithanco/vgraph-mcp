@@ -98,7 +98,7 @@ public enum TimelineTool: VGraphTool {
 
         ```
         vnotation VerticalTimeline extends Timeline {
-            layout: topToBottom
+            layoutDirection: topToBottom
         }
 
         vgraph myTimeline: VerticalTimeline "My Timeline" {
@@ -114,9 +114,9 @@ public enum TimelineTool: VGraphTool {
 
         ```
         vnotation WarTimeline extends Timeline {
-            layout: topToBottom
-            node type: Battle [nodeStyle: withCategory, color: "#883333", category: "Battle"]
-            node type: Treaty [nodeStyle: withCategory, color: "#339933", category: "Treaty"]
+            layoutDirection: topToBottom
+            node type: Battle [nodeStyle: withCategory, backgroundColor: "#883333", category: "Battle"]
+            node type: Treaty [nodeStyle: withCategory, backgroundColor: "#339933", category: "Treaty"]
             edge type: resolved_by from: Battle to: Treaty
             edge type: influenced from: Battle to: Battle
         }
@@ -176,7 +176,7 @@ public enum TimelineTool: VGraphTool {
         7. When you need domain-specific event types, use `vnotation extends Timeline` — \
         don't overload the generic Event type.
         8. When changing layout direction, always use `vnotation extends Timeline` with a \
-        `layout:` directive — the base Timeline is always left-to-right.
+        `layoutDirection:` directive — the base Timeline is always left-to-right.
         """
     }
 }
